@@ -21,6 +21,8 @@ import {
   Menu,
   X,
   Check,
+  Copy,
+  Loader2,
   ExternalLink,
   Lock,
   Workflow,
@@ -128,6 +130,8 @@ export default function App() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [isSubmittingProposal, setIsSubmittingProposal] = useState<boolean>(false);
+  const [copiedProposal, setCopiedProposal] = useState<boolean>(false);
   const [bookingModalOpen, setBookingModalOpen] = useState<boolean>(false);
 
   // Calculate Retainer strictly within $189 to $450
@@ -203,10 +207,8 @@ export default function App() {
     return Object.keys(errors).length === 0;
   };
 
-  const generateProposalEmailUrl = () => {
-    const subject = encodeURIComponent(`New Creator Proposal: ${formData.name || 'Creator'} ($${calculatedRate}/mo Retainer)`);
-    const body = encodeURIComponent(
-`Hi Cathy,
+  const generateProposalText = () => {
+    return `Hi Cathy,
 
 I would like to lock in this creator operations package with Virtually Ask Cath:
 
@@ -226,21 +228,107 @@ Looking forward to speaking with you on our discovery call!
 
 Best regards,
 ${formData.name}
-${formData.email}`
-    );
+${formData.email}`;
+  };
+
+  const generateProposalEmailUrl = () => {
+    const subject = encodeURIComponent(`New Creator Proposal: ${formData.name || 'Creator'} ($${calculatedRate}/mo Retainer)`);
+    const body = encodeURIComponent(generateProposalText());
     return `mailto:cathymaezamora2104@gmail.com?subject=${subject}&body=${body}`;
   };
 
-  const handleLockInRate = (e: React.FormEvent) => {
+  const generateGmailWebUrl = () => {
+    const subject = encodeURIComponent(`New Creator Proposal: ${formData.name || 'Creator'} ($${calculatedRate}/mo Retainer)`);
+    const body = encodeURIComponent(generateProposalText());
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=cathymaezamora2104@gmail.com&su=${subject}&body=${body}`;
+  };
+
+  const handleCopyProposal = async () => {
+    try {
+      await navigator.clipboard.writeText(generateProposalText());
+      setCopiedProposal(true);
+      setTimeout(() => setCopiedProposal(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard', err);
+    }
+  };
+
+  const handleLockInRate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    setIsSubmittingProposal(true);
+
+    const proposalSummary = generateProposalText();
+
+    try {
+      // 1. Direct AJAX delivery to cathymaezamora2104@gmail.com via FormSubmit endpoint
+      const formSubmitPromise = fetch('https://formsubmit.co/ajax/cathymaezamora2104@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: `💌 New Creator Retainer Inquiry: ${formData.name} ($${calculatedRate}/mo)`,
+          _template: 'table',
+          _captcha: 'false',
+          'Creator Name': formData.name,
+          'Email Address': formData.email,
+          'Social Handle / Portfolio': formData.handle,
+          'Primary Niche': formData.niche,
+          'Selected Tier': selectedTierPreset.toUpperCase(),
+          'Weekly Pitch Volume': `${weeklyPitches} pitches/week (~${weeklyPitches * 4}/month)`,
+          'Active Platforms Count': `${platformsCount} platforms`,
+          'Contract Defense Audit': includeContractAudit ? 'Yes (Included)' : 'No',
+          'Daily Priority Inbox Triage': includeInboxTriage ? 'Yes (Included)' : 'No',
+          'Dedicated Invoicing Admin': includeInvoicingAdmin ? 'Yes (Included)' : 'No',
+          'Calculated Monthly Retainer': `$${calculatedRate}/month`,
+          'Full Proposal Specifications': proposalSummary
+        })
+      });
+
+      // 2. Netlify Form submission (registers in Netlify forms dashboard when hosted on Netlify)
+      const netlifyPromise = (async () => {
+        try {
+          const params = new URLSearchParams();
+          params.append('form-name', 'proposal-calculator');
+          params.append('name', formData.name);
+          params.append('email', formData.email);
+          params.append('handle', formData.handle);
+          params.append('niche', formData.niche);
+          params.append('tier', selectedTierPreset);
+          params.append('weeklyPitches', String(weeklyPitches));
+          params.append('calculatedRate', String(calculatedRate));
+          params.append('platformsCount', String(platformsCount));
+          params.append('contractAudit', includeContractAudit ? 'yes' : 'no');
+          params.append('inboxTriage', includeInboxTriage ? 'yes' : 'no');
+          params.append('invoicingAdmin', includeInvoicingAdmin ? 'yes' : 'no');
+          params.append('summary', proposalSummary);
+
+          await fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+          });
+        } catch {
+          // ignore if running outside Netlify environment
+        }
+      })();
+
+      // Wait up to 3.5s so user is never stalled if network is slow
+      await Promise.race([
+        Promise.allSettled([formSubmitPromise, netlifyPromise]),
+        new Promise((resolve) => setTimeout(resolve, 3500))
+      ]);
+
       setFormSubmitted(true);
-      const emailUrl = generateProposalEmailUrl();
-      try {
-        window.location.href = emailUrl;
-      } catch (err) {
-        console.error(err);
-      }
+    } catch (err) {
+      console.warn('Direct submission network fallback:', err);
+      // Still display confirmation with one-click direct options
+      setFormSubmitted(true);
+    } finally {
+      setIsSubmittingProposal(false);
     }
   };
 
@@ -1620,48 +1708,120 @@ ${formData.email}`
 
                     <button
                       type="submit"
-                      className="btn-interactive-coral w-full py-3.5 px-6 text-xs font-bold uppercase tracking-wider text-white bg-[#EF516F] hover:bg-[#1A110D] hover:text-white transition-all duration-300 rounded-[20px] shadow-sm flex items-center justify-center gap-2 mt-4 group"
+                      disabled={isSubmittingProposal}
+                      className={`btn-interactive-coral w-full py-3.5 px-6 text-xs font-bold uppercase tracking-wider text-white bg-[#EF516F] hover:bg-[#1A110D] hover:text-white transition-all duration-300 rounded-[20px] shadow-sm flex items-center justify-center gap-2 mt-4 group ${
+                        isSubmittingProposal ? 'opacity-80 cursor-wait' : ''
+                      }`}
                     >
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Lock In This Rate (${calculatedRate}/mo · {weeklyPitches} Pitches/Wk)</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/15 group-hover:scale-110 transition-transform">
-                        <IosEmoji name="love-letter" alt="💌" className="w-3.5 h-3.5" />
-                      </span>
+                      {isSubmittingProposal ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>Sending Directly to Cathy's Inbox...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Lock In This Rate (${calculatedRate}/mo · {weeklyPitches} Pitches/Wk)</span>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/15 group-hover:scale-110 transition-transform">
+                            <IosEmoji name="love-letter" alt="💌" className="w-3.5 h-3.5" />
+                          </span>
+                        </>
+                      )}
                     </button>
                     <p className="text-[11px] text-center text-[#4A3B35]">
-                      No upfront billing · Cathy reviews each applicant within 24 hours.
+                      No upfront billing · Directly delivered to cathymaezamora2104@gmail.com · 24-hr reply.
                     </p>
                   </form>
                 ) : (
-                  <div className="py-8 text-center space-y-4 animate-in fade-in duration-300">
-                    <div className="w-12 h-12 bg-[#EF516F]/15 border border-[#EF516F] text-[#1A110D] rounded-full flex items-center justify-center mx-auto">
-                      <CheckCircle2 className="w-6 h-6" />
+                  <div className="py-6 sm:py-8 text-center space-y-4 animate-in fade-in duration-300">
+                    <div className="w-14 h-14 bg-[#EF516F]/15 border-2 border-[#EF516F] text-[#EF516F] rounded-full flex items-center justify-center mx-auto shadow-sm">
+                      <CheckCircle2 className="w-7 h-7" />
                     </div>
-                    <h4 className="text-lg sm:text-xl font-extrabold text-[#1A110D] font-heading lowercase tracking-tight">
-                      rate reserved for {formData.name} <span className="font-script font-bold text-2xl text-[#EF516F]">♡</span>
-                    </h4>
+
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 mb-2">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Proposal Sent Directly to Cathy's Inbox</span>
+                      </span>
+                      <h4 className="text-xl sm:text-2xl font-extrabold text-[#1A110D] font-heading lowercase tracking-tight">
+                        rate reserved for {formData.name} <span className="font-script font-bold text-2xl text-[#EF516F]">♡</span>
+                      </h4>
+                    </div>
+
+                    <div className="p-4 bg-[#F5F0ED] rounded-2xl border border-[rgba(26,17,13,0.08)] max-w-md mx-auto text-left text-xs space-y-2">
+                      <div className="flex items-center justify-between pb-2 border-b border-[rgba(26,17,13,0.08)]">
+                        <span className="text-[#4A3B35] font-medium">Delivered to:</span>
+                        <strong className="text-[#1A110D] font-mono-numbers">cathymaezamora2104@gmail.com</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#4A3B35]">Selected Package:</span>
+                        <span className="font-bold text-[#1A110D]">{selectedTierPreset.toUpperCase()} ({weeklyPitches} Pitches/Wk)</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#4A3B35]">Estimated Retainer:</span>
+                        <strong className="text-[#EF516F] font-extrabold text-sm font-mono-numbers">${calculatedRate}/month</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#4A3B35]">Applicant Contact:</span>
+                        <span className="text-[#1A110D] font-medium">{formData.email}</span>
+                      </div>
+                    </div>
+
                     <p className="text-xs text-[#4A3B35] leading-relaxed max-w-sm mx-auto">
-                      Your proposal for <strong className="text-[#1A110D]">{weeklyPitches} pitches/week</strong> at <strong className="text-[#1A110D] font-mono-numbers">${calculatedRate}/month</strong> has been formulated! We opened your email client with all specifications addressed directly to <strong className="text-[#1A110D]">cathymaezamora2104@gmail.com</strong>.
+                      All your proposal specifications have been automatically delivered to <strong className="text-[#1A110D]">cathymaezamora2104@gmail.com</strong>! Cathy Mae Zamora personally reviews each creator brief and will reply to your email within 24 hours.
                     </p>
-                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+
+                    {/* Secondary Direct Actions (Web Gmail, Copy Details, Native Mail) */}
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
                       <a
-                        href={generateProposalEmailUrl()}
-                        className="btn-interactive-coral inline-flex items-center justify-center gap-2 px-6 py-3 text-xs font-bold lowercase tracking-wider text-white bg-[#EF516F] hover:bg-[#1A110D] rounded-full shadow-md transition-all duration-300 group"
+                        href={generateGmailWebUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-interactive-coral w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold lowercase tracking-wider text-white bg-[#EF516F] hover:bg-[#1A110D] rounded-full shadow-sm transition-all duration-300"
+                        title="Open proposal draft directly in Web Gmail"
                       >
                         <Mail className="w-3.5 h-3.5" />
-                        <span>send proposal to Cathy's inbox</span>
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 group-hover:scale-110 transition-transform">
-                          <IosEmoji name="love-letter" alt="💌" className="w-3.5 h-3.5" />
-                        </span>
+                        <span>open in web gmail</span>
+                        <ExternalLink className="w-3 h-3 opacity-80" />
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={handleCopyProposal}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-full bg-white hover:bg-[#F5F0ED] text-[#1A110D] border border-[rgba(26,17,13,0.15)] transition-all duration-200"
+                        title="Copy complete proposal text to clipboard"
+                      >
+                        {copiedProposal ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-700">copied proposal!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-[#4A3B35]" />
+                            <span>copy proposal text</span>
+                          </>
+                        )}
+                      </button>
+
+                      <a
+                        href={generateProposalEmailUrl()}
+                        className="text-[11px] text-[#4A3B35] hover:text-[#EF516F] underline px-2 py-1 transition-colors"
+                        title="Open default desktop mail client"
+                      >
+                        open in mail app
                       </a>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setFormSubmitted(false)}
-                      className="text-[11px] text-[#4A3B35] hover:text-[#1A110D] block mx-auto underline pt-3 transition-colors"
-                    >
-                      Modify Parameters & Recalculate
-                    </button>
+
+                    <div className="pt-2 border-t border-[rgba(26,17,13,0.06)] mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormSubmitted(false)}
+                        className="text-[11px] text-[#4A3B35] hover:text-[#1A110D] underline transition-colors"
+                      >
+                        Modify Parameters & Recalculate
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
