@@ -1,0 +1,285 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base: #F5F0ED;
+  --bg-surface: #FFFFFF;
+  --text-main: #1A110D;
+  --text-muted: #4A3B35;
+  --accent: #EF516F;
+  --accent-blue: #9EC8ED;
+  --card-border: rgba(26, 17, 13, 0.15);
+}
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    scroll-behavior: smooth;
+    background-color: var(--bg-base);
+    color: var(--text-main);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+  }
+}
+
+.font-serif-luxury {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-feature-settings: "lnum" 1, "pnum" 1;
+}
+
+.font-editorial-italic,
+.font-italic-accent,
+.font-family-italic {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-script,
+.font-family-script {
+  font-family: 'Caveat', cursive, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.font-heading,
+.font-family-heading {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.font-heading .font-editorial-italic,
+.font-heading .font-italic-accent,
+.font-heading .font-family-italic {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  display: inline;
+  vertical-align: baseline;
+}
+
+.font-mono-numbers {
+  font-family: 'Space Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.rounded-editorial {
+  border-radius: 20px;
+}
+
+/* Micro-Interaction & 10% Motion Easing Classes (Fluid cubic-bezier(0.16, 1, 0.3, 1)) */
+.card-lift {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -6px rgba(26, 17, 13, 0.07), 0 6px 18px -4px rgba(239, 81, 111, 0.22);
+}
+
+.btn-lift {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.btn-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 22px rgba(239, 81, 111, 0.32);
+}
+
+.img-zoom,
+.creator-avatar-zoom {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Bento Grid Container & Card Layout (Approx. 10% Motion & Elevation) */
+.bento-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* ========================================================
+   HOVER LIFT & MICRO-INTERACTIONS (10% MOTION)
+   ======================================================== */
+.bento-card, .card, button, .collaborator-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+}
+
+.bento-card:hover, .card:hover, button:hover, .collaborator-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.bento-card {
+  border-radius: 20px;
+  background-color: #FFFFFF;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  will-change: transform, box-shadow;
+}
+
+.img-zoom:hover,
+.creator-avatar-zoom:hover {
+  transform: scale(1.03);
+}
+
+/* Glassmorphism helpers with Pearl Embrace (#F5F0ED) tone */
+.glass-nav {
+  background: rgba(245, 240, 237, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(26, 17, 13, 0.12);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(26, 17, 13, 0.12);
+}
+
+/* ========================================================
+   CONTINUOUS MARQUEE TICKER ANIMATION
+   ======================================================== */
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.collaborator-ticker-track {
+  display: flex !important;
+  width: max-content !important;
+  animation: tickerScroll 25s linear infinite !important;
+}
+
+.collaborator-ticker-track:hover {
+  animation-play-state: paused !important;
+}
+
+/* Legacy marquee alias */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-smooth {
+  display: flex;
+  width: max-content;
+  animation: tickerScroll 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-smooth:hover {
+  animation-play-state: paused;
+}
+
+/* Pipeline Progress Bar Fill Animation */
+@keyframes progress-fill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-progress-fill {
+  animation: progress-fill 4s linear forwards;
+}
+
+/* ========================================================
+   VERTICAL SCROLLING REVIEWS MARQUEE ANIMATION
+   ======================================================== */
+@keyframes verticalScroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+@keyframes verticalScrollSlow {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+.reviews-scroll-container {
+  max-height: 600px;
+  overflow: hidden;
+  position: relative;
+}
+
+.reviews-track {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: verticalScroll 30s linear infinite;
+  will-change: transform;
+}
+
+.reviews-track-slow {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: verticalScrollSlow 36s linear infinite;
+  will-change: transform;
+}
+
+.reviews-track:hover,
+.reviews-track-slow:hover,
+.reviews-scroll-container:hover .reviews-track,
+.reviews-scroll-container:hover .reviews-track-slow {
+  animation-play-state: paused !important;
+}
+
+/* Ticker Card Coral Pink Halo Glow on Hover with Smooth Cubic-Bezier */
+.ticker-card-glow {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.ticker-card-glow:hover {
+  border-color: #EF516F !important;
+  box-shadow: 0 14px 34px rgba(239, 81, 111, 0.25), 0 0 0 1px rgba(239, 81, 111, 0.4) !important;
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Standard Button Hover Transition */
+.btn-interactive-espresso {
+  background-color: #1A110D;
+  color: #FFFFFF;
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.btn-interactive-espresso:hover {
+  background-color: #EF516F;
+  color: #FFFFFF;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 26px rgba(239, 81, 111, 0.38);
+}
+
+.btn-interactive-coral {
+  background-color: #EF516F;
+  color: #FFFFFF;
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.btn-interactive-coral:hover {
+  background-color: #1A110D;
+  color: #FFFFFF;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 26px rgba(26, 17, 13, 0.25);
+}

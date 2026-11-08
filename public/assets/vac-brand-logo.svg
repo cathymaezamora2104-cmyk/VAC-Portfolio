@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <g id="vac-brand-icon">
+    <text x="210" y="275" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="210" font-weight="900" letter-spacing="-0.04em" fill="#141518">
+      VAC
+    </text>
+    <circle cx="435" cy="250" r="28" fill="#EF516F" />
+    <text x="250" y="380" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="30" font-weight="600" letter-spacing="0.32em" fill="#4A3B35">
+      VIRTUALLY ASK CATH
+    </text>
+  </g>
+</svg>
